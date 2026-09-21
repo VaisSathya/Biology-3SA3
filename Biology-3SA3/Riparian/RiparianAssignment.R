@@ -1,0 +1,5 @@
+library(readr)
+dat <- read_csv("data/riparian.Rout.csv")
+View(dat)
+str(dat)
+summary(dat)
