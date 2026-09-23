@@ -54,6 +54,17 @@
         + 69*22
         + 101*13)
   
+## making a variable
+  
+weight <- c(5,6,NA)
+
+print(mean(weight))
+
+print(weight==6)
+
+## working around the NA
+
+print(!is.na(weight))
 ## dplyr verbs to know ##
   
   # filter() chooses rows based on column values
@@ -61,14 +72,71 @@
     ## Syntax <, <=, ...
     ## == for equals
     ## != for does not equal
+    ## the filter() function keeps things that match and drops NAs
+    ## filter.out() keeps things that don't match and keeps NAs
+
   # select() changes whether or not a column is included
+    ## Rarely necessary, but often convenient
+    
   # mutate() changes the values fo columns and creates new columns
-  # count()
+  # summarize()
+    # count() collapses each group in a single row
+
+### Types of Data ###
+  
+  # Nominal: name only
+    ## Ex: list of countries
+  # Ordinal: order, no differences
+    ## Ex: disease stages or grades
+  # Interval: differences, no ratios
+    ## Ex: temperature in C
+  # Ratio: ratio data
+    ## Ex: temperature in K
+
+  # * Binary variables don't really fit
+
+## Non-numeric variables ##
+
+# - Have 2 representations:
+#   - The name itself is a character variable
+#   - A pointer
 
 ## put these at beginning bc when restarting you know if you have the package or not
 library(readr)
 library(dplyr)
-
+  
 dat <- read_csv("riparian.Rout.csv")
 
+# summary(dat) is not really part of the script logic
+summary(dat)
+# filter
+conQ <- (dat
+      |>filter(conductivity>500)
+      )
 
+# select
+
+print(dat
+      |> filter(conductivity>500)
+      |> select(transect_no, position, plant_species, conductivity)
+      )
+
+#
+print(dat
+      |> filter(position>10)
+      |> select(transect_no, position, plant_species, conductivity)
+)
+
+## what if we want to know about NAs?
+print(dat
+      |> filter_out(position<=10)
+      |> select(transect_no, position, plant_species, conductivity)
+)
+
+
+# check all seems to work 
+
+print(dat
+      |> filter_out(position<=10) | is.na(position)
+      |> select(transect_no, position, plant_species, conductivity)
+)
