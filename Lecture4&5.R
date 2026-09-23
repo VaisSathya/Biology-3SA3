@@ -61,7 +61,7 @@
     ## Syntax <, <=, ...
     ## == for equals
     ## != for does not equal
-  # select() changes whetehr or not a column is included
+  # select() changes whether or not a column is included
   # mutate() changes the values fo columns and creates new columns
   # count()
 
@@ -70,3 +70,5 @@ library(readr)
 library(dplyr)
 
 dat <- read_csv("riparian.Rout.csv")
+
+
