@@ -132,11 +132,92 @@ print(dat
       |> filter_out(position<=10)
       |> select(transect_no, position, plant_species, conductivity)
 )
-
+  ### filter_out gets rid of the things it knows you don't want (it keeps NAs)
 
 # check all seems to work 
 
 print(dat
-      |> filter_out(position<=10) | is.na(position)
+      |> filter_out(position<=10) | is.na(position) # brings us back to filter()
       |> select(transect_no, position, plant_species, conductivity)
 )
+
+###############################################################################
+# September 28, 2026
+
+dat1 <- read_tsv("provinces.tsv")
+
+print(dat1)
+
+## mutate - working making new variables and overwriting old variables
+
+dat1 <- print(dat1
+      |> mutate(
+        TotalArea = Land + Water
+        , density = Population/TotalArea
+        , check = TotalArea - Total
+        )
+      )
+
+summary(dat1)
+
+## sumaarise()
+ # Calculate statistics
+ # Break things into groups (use .by=)
+ # summarise and take mean gives diff value than summary then take the mean
+
+ # summarise() is meant to be used in the overall workflow
+print(dat
+      |> summarise(
+        transect_no=mean(transect_no)
+        , position = mean(position)
+      )
+    )
+
+summary(dat) # summary is meant to be quick
+
+meanBySpecies <- print(dat
+      |> summarise(
+        conductivity=mean(conductivity)
+        , wet = mean(wet)
+        , .by = plant_species
+      )
+    )
+
+# ggplot2
+
+  # Must describe:
+    # Data (always the first argument)
+    # aes (aesthetic mapping)
+    # geometries (geom_)
+
+  # May also describe:
+    # Scales
+      # Log scales, color scales, ...
+    # Facets
+      # Break your plot into many plots
+    # Themes
+      # Look and feel (not directly related to data)
+
+  # Data will have the shape of:
+    # Rows for observations
+    # Columns for variables
+
+  # Ways to map data to visual elements
+    # 1. Colour
+    # 2. Shape
+    # 3. Axes
+    # 4. Line type
+    # 4. Transparency
+
+    # You can construct good graphics by using what people have learned by 
+    # communicating graphical info
+
+library(ggplot2) # add the other libraries generally
+        
+print(ggplot(dat)
+      + aes()
+      )
+  
+
+
+
