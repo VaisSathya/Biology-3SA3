@@ -214,10 +214,68 @@ meanBySpecies <- print(dat
 
 library(ggplot2) # add the other libraries generally
         
-print(ggplot(dat)
-      + aes()
+scatter<-print(ggplot(dat)
+      + aes(conductivity, wet, color=plant_species)
+      +geom_point()
       )
-  
+
+# Bar plots: for straight counts
+# Histograms: are for counting things in bins
+
+## Example
+
+bar<-print(ggplot(dat)
+      + aes(transect_no) # we only have distinct transect_no, so histograms 
+      # wouldn't be great here
+      +geom_bar()
+)
+
+print(ggplot(dat)
+      + aes(position) # bad
+      +geom_bar()
+)
+
+histogram<-print(ggplot(dat)
+           + aes(position) # we only have distinct transect_no, so histograms 
+           # wouldn't be great here
+           +geom_histogram()
+)
+
+# Boxplots are not doing statistical tests
+ ## They use stat ideas for guidance
+ ## Use them for guidance
+
+print(ggplot(dat)
+      +aes(y=wet, x=plant_species)
+      +geom_boxplot()
+      )
+
+# Smooth geom
+ ## Uses stat ideas for guidance
+ ## Use for exploration
+
+print(scatter + geom_smooth())
+
+# Scales
+ ## If you have ratio data, you should think carefully about what scale is best
+
+# Facets: breaking a single plot into many plots
+
+## all log scales are basically the same (look at ratios instead of intervals)
+## the 10 in log10 looks at how intervals are chosen
+print(scatter + scale_x_log10())
+
+print(scatter + facet_wrap(~plant_species))
+
+# Themes: the best way to control non-mapping aesthetics
+ ## How plot looks, not how it maps the data
+ ## About 30 built-in themes
+ ## Can control specific elements
+
+## Not necessary if a global theme is defined (library(ggplot2); theme_set(theme_bw(base_size=15)))
+###print(scatter + facet_wrap(~plant_species) + theme_bw())
+
+
 
 
 
