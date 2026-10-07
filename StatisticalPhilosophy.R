@@ -66,6 +66,73 @@
   # How does that compare to what we saw? 
   # What's the simplest way to do this?
   # Answer: treat them as if they were all the same (relabel all the groups) a lot of times (scramble them a shit ton)
+    ## This is called a PERMUTATION
+
+## Interpretation ##
+
+# 10% of random trials had an effect as big or bigger than the observed one
+# We don't want to conclude the effect was positive
+  # Because then our chance of making a mitake would be too big
+  # We don't want to conclude its not positive
+  # Conclude inconclusive
+
+## Practical Frequentism ##
+
+# Making assumptions allows us to do much more powerful statistics
+  # A Powerful Test: more likely to find real effects when they exist
+# But assumptions are generally not exactly correct
+  # Error rate could be higher or lower than you think
+# There's also a tradition of accepting tests that are asymptotically valid
+  # Error rate is <= alpha with the additional assumption that there is "enough" data
+  # Asymptotically valid means would be valid if there is enough data
+    # Normal approximation to binomial tests
+    # ANOVA for ___
+
+# The bedrock of frequentism is testing the null hypothesis
+  # In the hypothetical where there's nothing to detect, we want to detect it <= alpha of the time
+
+# We also want our CIs to be valid
+  # The parameter we're estimating should fall outside our CI <= alpha of the time
+
+## Permutation Test Assumptions ##
+
+# What assumptions did we make?
+  # Populations are identical
+    # Make them independent by randomizing them
+  # Independent sampling
+    # What if we gave siblings the same treatment?
+  # We're not doing anything else
+  # The groups differ only in the manner we are testing
+
+## Confidence Interval (CI) Logic ##
+
+# To reject the null hypothesis, we ask:
+  # assuming the null is true, what is the probaility under the null of getting a value at least as extreme as my observation?
+
+# To reject a value from our CI, we ask:
+  # assuming the value is true, what is the probability under the null of getting a value at least as extreme as my observaton?
+
+# Result:
+  # We reject the (unknown) true value <= alpha of the time
+    # If all our assumptions are correct
+
+## CIs vs P-values ##
+
+# CIs are more useful but require more assumptions
+  # If effects are absent, you don't need any assumptions about them
+  # To assume that treated children grow better, we need asusumptions about the relationship between distributions
+
+## Paradigm Summary ##
+
+# We want to "fail to reject" the null hypothesis at 1-alpha of the time, under the assumption that its true
+  # We can do this by only rejecting outcomes that are unlikely under the null hypothesis
+  # Using our P-value definition
+
+# WE (usually) do this bc we want to test confidence in the sign of an effect or difference
+  # The probability of making a sign error will be less than the probability of a false positive
+  # If the true answer is negative, the probability of seeing our positive observation will
+
+
 
 
 
