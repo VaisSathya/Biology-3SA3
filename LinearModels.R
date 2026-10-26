@@ -122,7 +122,7 @@ print(tidy(lmean, conf.int=TRUE))
   #   b. Different scale
   #   c. Medians
 
-# R Model Parameters
+# R Model Parameters (attaches a parameter to a predictor)
   # Intercept (constant) is the estimated value at:
     ## Zero for continuous predictors
     ## "Baseline" for categorical predictors
@@ -136,4 +136,55 @@ print(tidy(lmean, conf.int=TRUE))
       ## Intercept = baseline group
       ## Coefficient = difference added to reach the other group
 
+# Effect Sizes
+  # Units of parameters in mouse activity example = ml CO2/h for mouse activity (temp difference) and (ml CO2/h)/degC
+    ## Children example: inches for height; L for volume
+  # How do we know if our units should be thought of as large or not?
+    # Compare to population statistics, not inferential statistics
+    # Want to know if the value is large compared to something real, not compared to our own uncertainty
+      ## Ex: total value, variation in population, difference between sexes, difference between species,...
+
+    # Compare to a value with same units (student)
+    # Specific scientific knowledge often needed (student)
+
+# Measures of Size (in 2 ways)
+  # 1. Certainty (of parameters sign)
+  #   a. p-values, t-value
+  #   
+  # 2. Effect
+  #   a. unit-ed value, ratio of value to something with same unit
+  #   b. or a log-ratio
+  #   
+  # 3. Ratios are also good
+
+# Measures of Spread
+  # 1. Standard Deviation 
+  #   a. Measure of variation of population
+  #   b. Compares this to understand effect estimate
+  #   c. How important is what we see?
+   
+  # 2. Standard Error (or confidence interval)
+  #   a. How much variation we would expect to see if estimated the parameter again
+  #   b. How confindent are we at what we see?
+  
+  ## Increasing sample --> SD changes only a little bit (typically), but SE decreases
+  
+    # Scientficially, are you more interested in knowing how big an effect is or how certain you are about its sign?
+      ## Usually how big an effect is 
+    # Why is there so much emphasis on p-values?
+      ## Some people are afraid of statistics
+      ## Some people want statistics to be magic
+    
+# Parameterizing
+  # Different two-group models have the same fit and same:
+    # Predicted mean for each observation
+    # Estimated SD???
+  # But different parameterizations
+    ## Baseline and difference (default for categorical variables)
+    ## interecept and slope (default for continuous variables)
+    ## mean and difference
+  # lm does not work with too many parameters
+    
+# Paired t-test
+  # Ex: do people have more joint erosion on their dominant hand?
 
