@@ -1,0 +1,117 @@
+---
+title: "Lecture 3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Use a pound key (`#`) to indicate a comment.
+
+## Calculator
+
+Make sure you know the rules.
+
+```{r calculator}
+7+3*9
+32/4*4
+```
+
+Why doesn't Dushoff like the second one?
+
+```{r parens}
+print((32/4)*4)
+```
+
+## Assigning values to variables
+
+```{r assign}
+x <- 23
+print(x)
+```
+
+What will happen here?
+
+```{r no-assign}
+x + 17
+print(x)
+```
+
+What happened here?
+
+```{r assign-y}
+y <- x + 17
+y
+```
+
+Question from card:
+
+```{r card}
+print(x+17)
+```
+
+NA is included generally because R likes to be over-inclusive.
+
+------------------------------------------------------------------------
+
+## Values in R
+
+We need to understand: numeric, character and logical.
+
+`str` tells us about the structure of a variable.
+
+```{r numeric}
+num <- 3
+str(num)
+```
+
+Quotes make something into a character value instead of an R name.
+
+```{r character}
+char <- "Hello, class?"
+str(char)
+```
+
+```{r logical}
+logic <- TRUE ## No quotes
+str(logic)
+```
+
+R's fundamental object is a *vector*. `c()` (concatenate) puts elements together into a vector.
+
+```{r vectors}
+words <- c("Mary", "had", "a", "little", "lamb")
+str(words)
+
+v <- 1:5  ## 'm:n' creates a sequence from m to n
+str(v)
+```
+
+### Vector math
+
+```{r vector-math}
+v <- 1:5
+w <- c(0, 1, 1, 2, 4)
+v+w
+print(w)
+print(2*w)
+
+mean(c(2, 5, 11))
+
+x <- 1:10
+m_x <- mean(x)
+print(m_x)
+```
+
+------------------------------------------------------------------------
+
+## Functions
+
+We've already seen a bunch of functions. For example?
+
+```{r runif, error=TRUE}
+runif()
+```
+
+Learn about functions using RStudio help. Pay attention to what the arguments are. In general, pass arguments using `=`.

@@ -1,0 +1,350 @@
+---
+title: "Lectures 4 & 5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## What is an outlier?
+
+-   A point that is unlike other values of the same variable
+-   A point that doesn't follow the trend (relating two or more variables)
+
+## Why do we look for outliers?
+
+-   Outlier might be part of the wrong pattern
+-   Outliers might skew the data (have a very strong effect on the statistics)
+-   They might be wrong
+
+## What do we do when we find outliers?
+
+### Quality Control
+
+-   Take notes & double check everything you enter or transcribe
+-   If you find a mistake only because it's an outlier, then something in the system messed up
+
+## Tidyverse
+
+A group of packages designed to allow data manipulation and visualization at a higher conceptual level than base R.
+
+### dplyr
+
+-   Designed to focus on tabular data (columns as variables and rows as observations)
+-   Make simple tasks readable and understandable (uses verb-style functions)
+-   Uses pipe syntax
+
+```{r pipe}
+sin(sqrt(7))
+
+7 |> sqrt() |> sin() |> print() # pipe syntax
+```
+
+### Multi-line syntax
+
+R guesses when you are done telling it what to do.
+
+```{r multiline-wrong}
+73*48
++69*22
++101*13 # it solves line by line and does not combine
+```
+
+Two ways to solve this:
+
+1.  Modern way: force R to find the right way, because the expression would be complete if read line by line.
+
+```{r multiline-modern}
+73*48 +
+  69*22 +
+  101*13
+```
+
+2.  Aesthetic way using parentheses.
+
+```{r multiline-parens}
+print(73*48
+      + 69*22
+      + 101*13)
+```
+
+### Making a variable
+
+```{r weight}
+weight <- c(5,6,NA)
+
+print(mean(weight))
+
+print(weight==6)
+```
+
+Working around the NA:
+
+```{r is-na}
+print(!is.na(weight))
+```
+
+## dplyr verbs to know
+
+-   `filter()` chooses rows based on column values
+    -   Based on criteria about variables
+    -   Syntax `<`, `<=`, ...
+    -   `==` for equals
+    -   `!=` for does not equal
+    -   `filter()` keeps things that match and drops NAs
+    -   `filter_out()` keeps things that don't match and keeps NAs
+-   `select()` changes whether or not a column is included
+    -   Rarely necessary, but often convenient
+-   `mutate()` changes the values of columns and creates new columns
+-   `summarize()`
+    -   `count()` collapses each group into a single row
+
+## Types of data
+
+-   **Nominal:** name only
+    -   Ex: list of countries
+-   **Ordinal:** order, no differences
+    -   Ex: disease stages or grades
+-   **Interval:** differences, no ratios
+    -   Ex: temperature in C
+-   **Ratio:** ratio data
+    -   Ex: temperature in K
+
+\* Binary variables don't really fit.
+
+## Non-numeric variables
+
+Have 2 representations:
+
+-   The name itself is a character variable
+-   A pointer
+
+## Loading packages and data
+
+Put the libraries at the beginning, so when restarting you know whether you have the package or not.
+
+```{r load}
+library(readr)
+library(dplyr)
+
+dat <- read_csv("riparian.Rout.csv")
+
+# summary(dat) is not really part of the script logic
+summary(dat)
+```
+
+### filter
+
+```{r filter}
+conQ <- (dat
+         |> filter(conductivity>500)
+         )
+```
+
+### select
+
+```{r select}
+print(dat
+      |> filter(conductivity>500)
+      |> select(transect_no, position, plant_species, conductivity)
+      )
+```
+
+```{r filter-position}
+print(dat
+      |> filter(position>10)
+      |> select(transect_no, position, plant_species, conductivity)
+)
+```
+
+What if we want to know about NAs? `filter_out()` gets rid of the things it knows you don't want (it keeps NAs).
+
+```{r filter-out}
+print(dat
+      |> filter_out(position<=10)
+      |> select(transect_no, position, plant_species, conductivity)
+)
+```
+
+Check that all seems to work. (Note: the `| is.na(position)` below is placed outside a function call in the pipe, which brings us back to `filter()`; as written in the original script this line will error.)
+
+```{r filter-out-check, error=TRUE}
+print(dat
+      |> filter_out(position<=10) | is.na(position) # brings us back to filter()
+      |> select(transect_no, position, plant_species, conductivity)
+)
+```
+
+------------------------------------------------------------------------
+
+# September 28, 2026
+
+```{r provinces}
+dat1 <- read_tsv("provinces.tsv")
+
+print(dat1)
+```
+
+## mutate
+
+Making new variables and overwriting old variables.
+
+```{r mutate}
+dat1 <- print(dat1
+      |> mutate(
+        TotalArea = Land + Water
+        , density = Population/TotalArea
+        , check = TotalArea - Total
+        )
+      )
+
+summary(dat1)
+```
+
+## summarise()
+
+-   Calculate statistics
+-   Break things into groups (use `.by=`)
+-   `summarise` and then taking the mean gives a different value than `summary` then taking the mean
+-   `summarise()` is meant to be used in the overall workflow
+
+```{r summarise}
+print(dat
+      |> summarise(
+        transect_no=mean(transect_no)
+        , position = mean(position)
+      )
+    )
+
+summary(dat) # summary is meant to be quick
+```
+
+```{r mean-by-species}
+meanBySpecies <- print(dat
+      |> summarise(
+        conductivity=mean(conductivity)
+        , wet = mean(wet)
+        , .by = plant_species
+      )
+    )
+```
+
+## ggplot2
+
+Must describe:
+
+-   Data (always the first argument)
+-   `aes` (aesthetic mapping)
+-   Geometries (`geom_`)
+
+May also describe:
+
+-   Scales
+    -   Log scales, color scales, ...
+-   Facets
+    -   Break your plot into many plots
+-   Themes
+    -   Look and feel (not directly related to data)
+
+Data will have the shape of:
+
+-   Rows for observations
+-   Columns for variables
+
+Ways to map data to visual elements:
+
+1.  Colour
+2.  Shape
+3.  Axes
+4.  Line type
+5.  Transparency
+
+You can construct good graphics by using what people have learned by communicating graphical info.
+
+```{r scatter}
+library(ggplot2) # add the other libraries generally
+
+scatter <- print(ggplot(dat)
+      + aes(conductivity, wet, color=plant_species)
+      + geom_point()
+      )
+```
+
+-   **Bar plots:** for straight counts
+-   **Histograms:** for counting things in bins
+
+### Example
+
+```{r bar}
+bar <- print(ggplot(dat)
+      + aes(transect_no) # we only have distinct transect_no, so histograms
+      # wouldn't be great here
+      + geom_bar()
+)
+```
+
+```{r bar-bad}
+print(ggplot(dat)
+      + aes(position) # bad
+      + geom_bar()
+)
+```
+
+```{r histogram}
+histogram <- print(ggplot(dat)
+           + aes(position) # we only have distinct transect_no, so histograms
+           # wouldn't be great here
+           + geom_histogram()
+)
+```
+
+### Boxplots
+
+Boxplots are not doing statistical tests. They use stat ideas for guidance; use them for guidance.
+
+```{r boxplot}
+print(ggplot(dat)
+      + aes(y=wet, x=plant_species)
+      + geom_boxplot()
+      )
+```
+
+### Smooth geom
+
+Uses stat ideas for guidance. Use for exploration.
+
+```{r smooth}
+print(scatter + geom_smooth())
+```
+
+### Scales
+
+If you have ratio data, you should think carefully about what scale is best.
+
+All log scales are basically the same (look at ratios instead of intervals). The 10 in `log10` looks at how intervals are chosen.
+
+```{r log-scale}
+print(scatter + scale_x_log10())
+```
+
+### Facets
+
+Breaking a single plot into many plots.
+
+```{r facets}
+print(scatter + facet_wrap(~plant_species))
+```
+
+### Themes
+
+The best way to control non-mapping aesthetics: how the plot looks, not how it maps the data.
+
+-   About 30 built-in themes
+-   Can control specific elements
+
+Not necessary if a global theme is defined (`library(ggplot2); theme_set(theme_bw(base_size=15))`).
+
+```{r theme, eval=FALSE}
+print(scatter + facet_wrap(~plant_species) + theme_bw())
+```
