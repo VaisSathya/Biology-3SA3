@@ -1,3 +1,11 @@
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2); theme_set(theme_bw(base_size=15))
+library(broom)
+library(performance)
+library(readxl)
+
 # Linear Models of Observations
   # 1. t-test
   # 2. regression
@@ -45,6 +53,7 @@
 # Fitting in R
   # Code: lm(formula, data)
     # formula is in form y~x1+x2+...
+    # Format: RV~PV 
 
   # lm(y~1+x+c)
     # y is response variable
@@ -59,13 +68,7 @@
 # Example of No Predictor: one-sample t-test (what is mean weight of African elephant?)
   # Assumption: population is normall distributed
 
-library(readr)
-library(dplyr)
-library(ggplot2); theme_set(theme_bw(base_size=15))
-library(broom)
-library(performance)
-
-children <- read.csv("http://faculty.washington.edu/tathornt/Biost509/DataSets/fev2.csv",header=TRUE)
+children <- read_csv("fevData.Rout.csv")
 
 summary(children)
 
@@ -136,6 +139,16 @@ print(tidy(lmean, conf.int=TRUE))
       ## Intercept = baseline group
       ## Coefficient = difference added to reach the other group
 
+# Continuous vs Categorical Predictor in Mice Activity Example
+
+  # Categorical View: temperature is a label (cold or warm); R turns it into 0/1 code
+  #   Intercept = mean of baseline group (cold)
+  #   Coefficient = how much to add to get to the other group (warm-cold)
+  # 
+  # Continuous View: temperature is a number (10 or 20)
+  #   Slope = change in CO2 per degree
+  #   Intercept = predicted CO2 at 0 degrees
+
 # Effect Sizes
   # Units of parameters in mouse activity example = ml CO2/h for mouse activity (temp difference) and (ml CO2/h)/degC
     ## Children example: inches for height; L for volume
@@ -147,14 +160,49 @@ print(tidy(lmean, conf.int=TRUE))
     # Compare to a value with same units (student)
     # Specific scientific knowledge often needed (student)
 
+mice <- read_csv("mouseActivityData.Rout.csv")
+summary(mice)
+
+twoGroup<-lm(activity~treat, data=mice)
+# Indicator = treatment = 0 for cold or 1 for warm
+# y = a+b*indicator
+
+# Conversion = slope*gap = group difference
+
+plot(twoGroup)
+
+print(
+  tidy(twoGroup, conf.int=TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+hist(residuals(twoGroup))
+
+twoCont<-lm(activity~temp, data=mice)
+# temp = 10 or 20
+# Activity = a+b*temp
+
+# Conversion = group difference/gap = slope
+plot(twoCont)
+
+print(
+  tidy(twoCont, conf.int=TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+######################################
+
+
+
+
 # Measures of Size (in 2 ways)
   # 1. Certainty (of parameters sign)
   #   a. p-values, t-value
-  #   
+   
   # 2. Effect
   #   a. unit-ed value, ratio of value to something with same unit
   #   b. or a log-ratio
-  #   
+   
   # 3. Ratios are also good
 
 # Measures of Spread
@@ -165,15 +213,32 @@ print(tidy(lmean, conf.int=TRUE))
    
   # 2. Standard Error (or confidence interval)
   #   a. How much variation we would expect to see if estimated the parameter again
-  #   b. How confindent are we at what we see?
+  #   b. How confident are we at what we see?
   
   ## Increasing sample --> SD changes only a little bit (typically), but SE decreases
   
-    # Scientficially, are you more interested in knowing how big an effect is or how certain you are about its sign?
+    # Scientifically, are you more interested in knowing how big an effect is or how certain you are about its sign?
       ## Usually how big an effect is 
     # Why is there so much emphasis on p-values?
       ## Some people are afraid of statistics
       ## Some people want statistics to be magic
+
+# Standard Deviation
+  # Measures variability of a variable
+  # Uses same units as the variable
+  # Variance is the square (of SD)
+  # Estimate divided by within-group SD can help understand biological importance
+    ## Ex: effect of temperature treatment is 1.2x the amount of natural variability
+    ## Often called d or g (JD thinks its usually better to use scientific judgement)
+
+# Standard Error
+  # Measures uncertainty of a parameter
+  # Same units as the parameter
+  # Same units as the response variable, if the predictor is categorical
+  # Estimate divided by SE is a measure of certainty
+    ## Directly related to p-value
+    ## Often reported (in R's summary as the t-statistic)
+      ### Won't use it in this class
     
 # Parameterizing
   # Different two-group models have the same fit and same:
@@ -181,10 +246,236 @@ print(tidy(lmean, conf.int=TRUE))
     # Estimated SD???
   # But different parameterizations
     ## Baseline and difference (default for categorical variables)
-    ## interecept and slope (default for continuous variables)
+    ## intercept and slope (default for continuous variables)
     ## mean and difference
   # lm does not work with too many parameters
+    # based on how much data you have and types
+    # two-group model takes only 2 parameters, with categorical variable associated with 1 predictor?
+      ## Add 2 cat predictor, adds only 1 parameter to model
     
 # Paired t-test
   # Ex: do people have more joint erosion on their dominant hand?
+    ## What's missing?
+      ### Missing Person ID (who does each hand belong to)
+        #### Need to know which dominant hand goes with which non-dominant hand
+      ### Can't use a two-group test bc the two groups are not independent; both hands belong to the same body
+    
+    ## How to do it?
+      ### the paired t-test is equivalent to a one-sample test on the differences
+      ### Procedure is the same, but now we're interested in the sign of the estimate
+
+      ### Turn it back into a no predictor case
+      ### diff = dominant = non-dominant
+      ### interecept = average difference
+
+digit <- (read_excel("BengaliDigits.xlsx"))
+
+clean_df <- digit
+analyze<- (digit
+           |> clean_names()
+          ## |> mutate(leftDiff = )
+          )
+summary(clean_df)
+
+# Compare numbers to the means (for significance)
+
+
+
+# interaction model next week
+
+
+
+# lm Questions
+  # t-test vs. anova vs. regression
+    ## make sure predictor variables are coded correctly, and then don't worry
+  # Different-size groups
+    # Don't worry about it
+  # lm is kind-of magic
+
+
+
+
+
+
+# Continuous Predictor
+  # 1. Regression analysis
+  # 2. Typically focus on the slope
+  # 3. Pay attention to baseline as well as intercept
+  #   4. Example: fev.R
+
+# Assumption Checking
+  # Independence
+  #   1. Most important assumption 
+  #     a. Can't be checked statistically
+  #   2. Good study design and model construction
+  #   3. Observations should not share anything with other observations that's not included in the model
+  # Study Design
+  #   1. Randomized studies, if done correctly, can address most independence concerns
+  #     a. Not all studies can be randomized
+
+# Homogeneity of Variance
+  
+  # The residual spread should be the same at every value of the predictor (same in both groups)
+
+  # When would you expect to see this?
+    ## Measurement noise > spread
+    ## Treatment is a small shift in mean
+    ## Groups come from same homogenous population
+    ## Situations where variance grows with mean
+  # Consider a data transformation
+    # 1. log or square root
+    # 2. Welch's t-test
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################
+# plot(regression_model)
+# tidy(regression_model, conf.int = TRUE)
+
+# Assumption Checking
+
+# 1. Independence
+# The most important assumption; it cannot generally be checked by a statistical test alone
+# Good study design and appropriate model construction are essential
+# Observations should not share unmodelled influences with other observations
+# They should be conditionally independent given the predictors/model
+# In a lung/FEV example, consider whether observations from the same person or family are related
+# Repeated measurements from one individual are not independent just because they are in separate rows
+
+# Study Design
+# Properly conducted randomized studies can address many independence concerns
+# Not all studies can be randomized
+# When randomization is not possible, account for the structure of the data in the model/design
+
+# Linearity
+  # Ask whether a model that is linear in its chosen parameters is a good fit to the data
+  # If the relationship is not adequately described:
+  # 1. Transform the response
+  # 2. Transform the predictor
+  # 3. Add curved terms, such as polynomial terms or splines
+  # 4. Consider interactions if the relationship depends on another predictor
+  # These choices can change the scientific question being asked
+  # Example questions:
+  # What is the slope on the original linear scale?
+  # What is the slope on the log scale?
+  # What is the average slope over a curved relationship?
+
+# Homogeneity of Variance
+# Residual spread should be approximately constant across predictor values/groups
+# Think about whether the residual variance appears to change with the fitted values or predictor
+# Situations where similar variance may be expected:
+# 1. Measurement noise is larger than the natural spread
+# 2. Treatment creates a small shift in the mean
+# 3. Groups come from the same homogeneous population
+# In some situations, variance grows with the mean
+# Possible approaches:
+# 1. Transform the response (e.g., log or square root, when appropriate)
+# 2. Consider Welch's t-test for a two-group comparison
+
+# Normality
+# Least important of these considerations
+# It is often helped by the Central Limit Theorem (CLT), especially as sample size grows
+# Check the distribution of residuals using diagnostic plots, including a Q-Q plot
+# If needed, consider:
+# 1. Robust linear-model inference
+# 2. Permutation-based linear-model inference
+# NOTE: Normality concerns do not override the need for independence or an appropriate model
+
+# The Central Limit Theorem (CLT)
+# Many distributions of sums/means of independent random variables tend toward a normal distribution
+# Variables arising from additive processes may therefore be approximately normal
+# Tests based on normality assumptions may be less sensitive to departures from normality with more data
+# This is because adding and averaging occur within many statistical procedures
+
+# Testing Regression Assumptions
+# Be careful about using P-values to test assumptions
+# Look for patterns in diagnostic plots and think about what those patterns imply
+# A predictive check can:
+# 1. Simulate data under the fitted model/assumptions
+# 2. Compare simulated data with the actual data
+# Outliers:
+# 1. Ask whether one observation has a large influence on the overall conclusion
+# 2. Consider how the conclusion changes if that observation is handled differently
+# 3. Use sensitivity analysis
+# 4. Where appropriate, try methods that rely less on normality assumptions
+
+# More Complicated Models
+
+# What if the Response Does Not Follow a Straight Line?
+# Options:
+# 1. Transform the response
+# 2. Transform the predictor
+# 3. Fit a curve
+# These choices may change the scientific interpretation/question
+# What is the slope on the original linear scale?
+# What is the slope on the log scale?
+# What is the average slope across a curved relationship?
+
+# Categorical Predictor: ANOVA
+# ANOVA can be represented as a linear model with a categorical predictor
+# For a variable with n categories, the model adds n - 1 parameters relative to a baseline
+# These are often represented by n - 1 dummy/indicator variables
+# Dummy variables use 0s and 1s to encode which category each observation belongs to
+# The intercept is the baseline category's estimated mean
+# Each categorical coefficient is a difference from the baseline
+# ANOVA tests whether there is evidence of differences among group means
+
+# General example:
+# anova_model <- lm(response ~ group, data = data_name)
+# anova(anova_model)
+# summary(anova_model)
+# broom::tidy(anova_model, conf.int = TRUE)
+
+# Variables and Parameters: Fitting a Quadratic
+# To fit a quadratic relationship, the model needs parameters for x and x^2 (plus an intercept)
+# The corresponding model terms are x and I(x^2)
+# Example:
+# quadratic_model <- lm(response ~ x + I(x^2), data = data_name)
+# Other curved relationships can be fitted, often using splines
+
+# Multiple Predictor Variables
+# Multiple regression includes more than one predictor in the same model
+# General form:
+# multiple_model <- lm(response ~ predictor1 + predictor2, data = data_name)
+# Each coefficient describes the association with that predictor while holding the other included predictors constant
+# Interpret each coefficient in the context of the other variables in the model
+
+# Interactions
+# An interaction allows the relationship between one predictor and the response to depend on another predictor
+# In R, use * to include both main effects and their interaction:
+# interaction_model <- lm(response ~ predictor1 * predictor2, data = data_name)
+# The formula predictor1 * predictor2 expands to:
+# predictor1 + predictor2 + predictor1:predictor2
+# The interaction term describes how the effect/slope of one predictor changes across values/groups of the other predictor
+
+# Final Reminders
+# 1. Check study design and independence first
+# 2. Inspect residual/diagnostic plots for model problems
+# 3. Interpret estimates and confidence intervals, not only P-values
+# 4. Keep units and scientific relevance in mind when judging effect size
+# 5. A statistically detectable effect is not automatically a scientifically important effect
 
