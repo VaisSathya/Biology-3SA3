@@ -5,6 +5,8 @@ library(ggplot2); theme_set(theme_bw(base_size=15))
 library(broom)
 library(performance)
 library(readxl)
+library(janitor)
+library(splines)
 
 # Linear Models of Observations
   # 1. t-test
@@ -268,20 +270,75 @@ print(
       ### diff = dominant = non-dominant
       ### interecept = average difference
 
-digit <- (read_excel("BengaliDigits.xlsx"))
+  # Ex: bengaliDigits
 
-clean_df <- digit
-analyze<- (digit
-           |> clean_names()
-          ## |> mutate(leftDiff = )
-          )
-summary(clean_df)
+digit <- read_excel("BengaliDigits.xlsx")
+
+# analyze <- (
+#   digit
+#   |> clean_names()
+#   # |> mutate(leftDiff = )
+# )
+
+analyze <- (digit
+            |> clean_names()
+            |> mutate(
+              leftDiff = l2d_mm - l4d_mm
+              , rightDiff = r2d_mm - r4d_mm
+            )
+)
+
+summary(analyze)
+
+rdMod <- lm(rightDiff ~ 1, data=analyze)
+
+plot(rdMod)
+
+
+print(
+  tidy(rdMod, conf.int=TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+# Note: you cannot use a P value to confirm that things are normal + nor homoscedastic
+# We compare the differences to zero
+
+ldMod <- lm(leftDiff ~ 1, data=analyze)
+
+## This _is_ a paired t-test
+
+with(analyze(t.test(l2d_mm, l4d_mm, paired=TRUE, data=analyze)))
+
+plot(ldMod)
+
+print(
+  tidy(ldMod, conf.int=TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+## How big are these differences? We could:
+#### divide them by mean finger length
+#### divide by a standard deviation of finger lengths
+#### Think about ratios (differences on the log scale!)
+
+analyze <- (analyze
+            |> mutate(leftLogRat = log(l2d_mm) - log(l4d_mm))
+)
+
+ratMod <- lm(leftLogRat ~ 1, data=analyze)
+
+plot(ratMod)
+
+print(
+  tidy(ratMod, conf.int=TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
 
 # Compare numbers to the means (for significance)
 
 
 
-# interaction model next week
+# interaction model next week and regression and multi category
 
 
 
@@ -293,15 +350,40 @@ summary(clean_df)
   # lm is kind-of magic
 
 
-
-
-
-
 # Continuous Predictor
   # 1. Regression analysis
   # 2. Typically focus on the slope
   # 3. Pay attention to baseline as well as intercept
-  #   4. Example: fev.R
+  #   4. Example: fev.R (regression analysis)
+
+summary(children)
+view(children)
+
+reg <- lm(lungCapacity~1+height, data=children)
+
+summary(reg)
+plot(reg)
+print(reg)
+print(tidy(reg, conf.int=TRUE))
+check_model(reg)
+
+## ggplot shows curves with geom_smooth
+## alpha is transparency, so we can see the fit better behind all the points
+print(ggplot(children, aes(height, lungCapacity))
+      + geom_point(alpha=0.4)
+      + geom_smooth(
+      )
+)
+
+# when adding formula, the formula has to be based off the aesthetics
+print(ggplot(children, aes(height, lungCapacity))
+      + geom_point(alpha=0.4)
+      + geom_smooth(method="lm"
+                    , formula = y ~ bs(x, 3)
+      )
+)
+
+
 
 # Assumption Checking
   # Independence
@@ -309,9 +391,43 @@ summary(clean_df)
   #     a. Can't be checked statistically
   #   2. Good study design and model construction
   #   3. Observations should not share anything with other observations that's not included in the model
-  # Study Design
-  #   1. Randomized studies, if done correctly, can address most independence concerns
-  #     a. Not all studies can be randomized
+  ## Ex: what should we worry about in the lung example?
+    # Is the same child measured twice?
+    # Are some groups of children related?
+    # Are older children taken from different schools?
+  ## Does it depend on our scientific question?
+  
+# Study Design
+#   1. Randomized studies, if done correctly, can address most independence concerns
+#     a. Not all studies can be randomized
+
+  # Linearity
+    # is a model that's linear in these particular parameters a good fit to the data?
+    # If not:
+      ## Consider whenther you should transform (the response variable)
+      ## Or add curvy terms (polynomial or spline)
+      ## Or if you need interactions
+
+  # Homogeneity of variance (also called homo and hetero scedasticity)
+    # variance does not change with the predictor variable
+    # Expect to see this if you have a large range of positive predictions
+    # If variation is proprtional to size, log transformations help
+ 
+ # Normality
+  # Least important consideration
+  # Most helped by CLT
+  # Can often be addressed by moodifying the linerr model
+    # robust lm inference
+    # permuation based lm inference
+
+## The CLT
+  # most distributions converge to a normal distribution if you add up independent random variables and take the mean
+    # variables that result from additive processes tend to be nonrmal
+    # variables that result from multiplicative porcesses tend to be lognormal
+    # ttests based on normality assumotions
+ 
+
+
 
 # Homogeneity of Variance
   
