@@ -1,3 +1,5 @@
+source("git_functions.R")
+
 library(readr)
 library(dplyr)
 library(tidyverse)
