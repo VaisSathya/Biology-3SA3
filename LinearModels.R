@@ -1,4 +1,3 @@
-
 library(readr)
 library(dplyr)
 library(tidyverse)
@@ -8,6 +7,7 @@ library(performance)
 library(readxl)
 library(janitor)
 library(splines)
+library(performance)
 
 # Linear Models of Observations
   # 1. t-test
@@ -382,8 +382,9 @@ print(ggplot(children)
                     , formula = y ~ x
       )
 )
-
-
+quartz()
+check_model(lheight)
+  # Data should somewhat look like posterior predictive check model
 
 # Assumption Checking
   # Independence
@@ -422,13 +423,10 @@ print(ggplot(children)
 
 ## The CLT
   # most distributions converge to a normal distribution if you add up independent random variables and take the mean
-    # variables that result from additive processes tend to be nonrmal
-    # variables that result from multiplicative porcesses tend to be lognormal
-    # ttests based on normality assumotions
+    # variables that result from additive processes tend to be normal
+    # variables that result from multiplicative processes tend to be lognormal
+    # t-tests based on normality assumotions
  
-
-
-
 # Homogeneity of Variance
   
   # The residual spread should be the same at every value of the predictor (same in both groups)
@@ -442,28 +440,74 @@ print(ggplot(children)
     # 1. log or square root
     # 2. Welch's t-test
 
+# Testing the regression assumptions
+  ## Assumptions are never exactly true
+  ## We will rarely reject when sample size is small, and often reject when sample size is large
+  ## Look for patterns in diagnostic plots and think about options
 
+# Predictive Check
+  ## Use check_model from the performance package
+  ## Simulates what it should look like if assumptions were true
 
+  ## Outliers
+    ## Asks: is there a single point with a lot of influence?
+    ## A point far from mean of predictor has more leverage
+    ## A point outside curves you say is a point that has a big effect on analysis
+    ## Sensitivity analysis
+      ### try the analysis without csome combination of outliers just to see
+    ### Try to rely less on normal assumption (robust or permutation-based inference)
 
+################ More Complicated Models ###############################
 
+# What if you don't think response is a straight line?
+  # transform the response
+  # transform the predictor
+  # fit a curve
+  # can also mean: changing your scientific question to some extent
+    # what is the slope on a linear or log scale?
+    # what is the average slope across a curved response?
 
+# Categorical Predictor
+  ## clasically called ANOVA
+  ## We add n-1 new parameters for a variable with n categories
+    ### We also add n-1 'lm variables' to the calculation (in addition to the intercept)
+    ### called dummy variables vc we code which category each observation is in using 0s and 1s
+  ## Ex: chickwts
 
+summary(chickwts)
 
+# what paradigm do we use?
+  ## even assuming we are frequentist
+  ## we need to fit n-1 parameters; how do we deal with alpha?
+    ### the counterfactual probability of seeing something when there's nothing there
+  ## at what level should we control alpha?
+    ### Experiment
+    ### Variable
+    ### Parameter
 
+# hypothesis based analysis
+  ## best is to focus on a small set of specific questions
+  ## associate them with a small number of parameters you can measure
+    ### you can use contrasts or interactions to construct the test you are most interested in
 
+# Exploratory analysis
+  ## look at large number of effects
+  ## which one seem interesting?
+  ## should you believe them?
+    ### NO
+    ### Do a new experiment
+    ### Maybe make some hypotheses and construct a hypothesis based q
+    ### False discovery rates and p-values corrections should be used sparingly
+    ### Can also look at confidence intervals
+      #### be aware that some proportion do not contain the answer
 
-
-
-
-
-
-
-
-
-
-
-
-
+# Variables and Parameters
+  ## to fit a quadratic, we need two parameters for the response
+  ## also means we need two 'lm variables' for the model
+    ### x and x^2
+  ## we might want to fit other sorts of curves (typically a spline)
+  ## like feed (in chicks) this is a 'multi-parameter' variable
+  ## Ex: fev
 
 
 
