@@ -360,27 +360,26 @@ print(
 summary(children)
 view(children)
 
-reg <- lm(lungCapacity~1+height, data=children)
+lheight <- lm(lungCapacity~1+height, data=children)
 
-summary(reg)
-plot(reg)
-print(reg)
-print(tidy(reg, conf.int=TRUE))
-check_model(reg)
+summary(lheight)
+plot(lheight)
+print(tidy(lheight, conf.int=TRUE))
 
 ## ggplot shows curves with geom_smooth
 ## alpha is transparency, so we can see the fit better behind all the points
-print(ggplot(children, aes(height, lungCapacity))
+print(ggplot(children)
+      + aes(height, lungCapacity)
       + geom_point(alpha=0.4)
-      + geom_smooth(
-      )
+      + geom_smooth()
 )
 
 # when adding formula, the formula has to be based off the aesthetics
-print(ggplot(children, aes(height, lungCapacity))
+print(ggplot(children)
+      + aes(height, lungCapacity)
       + geom_point(alpha=0.4)
       + geom_smooth(method="lm"
-                    , formula = y ~ bs(x, 3)
+                    , formula = y ~ x
       )
 )
 
