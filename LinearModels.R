@@ -9,6 +9,10 @@ library(janitor)
 library(splines)
 library(performance)
 
+
+children <- read_csv("fevData.Rout.csv")
+digit <- read_excel("BengaliDigits.xlsx")
+mice <- read_csv("mouseActivityData.Rout.csv")
 # Linear Models of Observations
   # 1. t-test
   # 2. regression
@@ -507,7 +511,24 @@ summary(chickwts)
     ### x and x^2
   ## we might want to fit other sorts of curves (typically a spline)
   ## like feed (in chicks) this is a 'multi-parameter' variable
+
+# Fitting a quadratic 
   ## Ex: fev
+    ### Do we have specific scientific question?
+      #### Does it curve up or down?
+        ###### test the quadratic term
+      #### Can we be confident about the avg trend, in the presence of curvature?
+    ### Use R function poly
+      #### Beware of overfitting
+
+lheight <- lm(lungCapacity~1+height, data=children)
+print(tidy(lheight, conf.int=TRUE))
+
+
+
+
+
+
 
 
 
