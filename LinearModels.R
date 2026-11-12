@@ -525,8 +525,62 @@ lheight <- lm(lungCapacity~1+height, data=children)
 print(tidy(lheight, conf.int=TRUE))
 
 
+# Multiple predictor variables
+  # LMs can easily handle multiple predictor variables
+  # Ex: fev.multi.rout
 
+summary(children)
+lSmoke<-lm(lungCapacity~1+currentSmoker, data = children) # why did we do 1+?
 
+quartz()
+check_model(lSmoke)
+
+print(ggplot(children)
++ aes(currentSmoker, lungCapacity)
++ geom_boxplot()
+)
+
+lSmokeInteraction<-lm(lungCapacity~1+currentSmoker+age, data = children)
+print(lSmoke)
+print(lSmokeInteraction)
+quartz()
+
+# Scientific Question
+  # Height can mediate the relationship between age and lung capacity
+    ## People might be taller bc they're older
+    ## We might want to exclude it to see direct effects of age
+    ## Or include it to see total effects
+  # Age cannot be caused by height
+    ## We should (usually) include it to see the effect of height
+
+# What is the effect of age on lung capacity?
+
+quartz()
+ageMod<-lm(lungCapacity~1+age, data=children)
+check_model(ageMod)
+
+quartz()
+ageHeightMod<-lm(lungCapacity~1+age+height, data=children)
+check_model(ageMod)
+
+# Controlling: adding a second variable when our primary. interest is the first
+  # We control for age when we study the effects of smoking on lung capacity (maybe also sex)
+  # When you control for a variable, you don't necessarily need to interpret the parameters of that variable at all
+
+# Conflation
+  # Why do children who smoke have higher lung capacity?
+    # Bc they're older
+    ## Age 
+
+# Accounting for Variation
+  # Even when we don't have conflation, controlling for relevant preditcotrs can make our predictions more accurate
+  # Ex: randomized control trial of a blood-pressure drug
+
+# How many parameters?
+  # Controlling for too many factors will make our predictions less precise
+    ## Add variation, uncertainty
+  # ROT: 5-10 solid, continuous data points per parameter
+  # When data points are small counts, or yes/no, we need to reduce parameters further
 
 
 
