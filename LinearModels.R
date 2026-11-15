@@ -13,6 +13,7 @@ library(performance)
 children <- read_csv("fevData.Rout.csv")
 digit <- read_excel("BengaliDigits.xlsx")
 mice <- read_csv("mouseActivityData.Rout.csv")
+penguins <- read_csv("penguinData.Rout.csv")
 # Linear Models of Observations
   # 1. t-test
   # 2. regression
@@ -582,135 +583,215 @@ check_model(ageMod)
   # ROT: 5-10 solid, continuous data points per parameter
   # When data points are small counts, or yes/no, we need to reduce parameters further
 
+# Which parameters?
+  # Its very common to choose predictors based on preliminary analyses
+  # Or to throw out interaction or curvature terms based on significance
+  # This is accepting the null hypothesis (concluding these things don't matter)
+  # Its also introducing confirmation bias
+    ## If we choose our final test based on the data, we will be bad frequentists
+     ### Will be wrong more than 5% of the time
+  # Decide how many parameters you can afford based on the data and 
+  # Decide which parameters to use based on scientific judgment
+    # Can be based on other data, but not based on data from your study
+
+########## Interactions ################
+# So far, each predictor has its own effect, and the effects add up
+  # The effect of age on lung capacity is assumed to be the same for boys and girls
+
+# What is an interaction?
+
+  # An interaction means the effect of one predictor depends on the value of another
+    ## Ex: does lung capacity increase faster with age for boys than for girls?
+
+  # Interactions are symmetric
+    ## If the effect of age depends on sex, then the effect of sex depends on age
+    ## We can choose whichever way of saying it matches our question
+
+# Interactions in R
+
+  # lm(y~x+z) is the additive model (no interaction)
+
+  # lm(y~x*z) is the interactive model
+    ## Short for lm(y~x+z+x:z)
+    ## The new lm variable is made by multiplying x and z
+    ## This is still a linear model bc it is linear in its parameters
+
+  # How many parameters does an interaction add?
+    ## Multiple the parameters of the two variables
+    ## Continuous and two categories: 1
+    ## Three categories and four categories: 2*3 = 6
+
+  # General parameter formula: 
+    ## Total parameters = 1 + (n-1) + (k-1) + (n-1)(k-1)
+  
+  # Ex: classPenguins (lmAsn)
+
+summary(penguins)
+
+allmod <- lm(bill_length_mm ~ bill_depth_mm, data=penguins)
+quartz(title="allmod")
+check_model(allmod)
+print(
+  tidy(allmod, conf.int=TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+# use augment (from broom) to attach estimates to the original data
+augAll <- augment(allmod, interval="confidence")
+
+quartz(title="augAll")
+print(ggplot(penguins)
+      + aes(bill_depth_mm, bill_length_mm)
+      + geom_point(aes(color=species))
+      + geom_line(aes(y=.fitted), data=augAll)
+      + geom_ribbon(aes(ymin=.lower, ymax=.upper)
+                    , data=augAll
+                    , alpha=0.4 # make ribbon translucent
+                    )
+)
+
+######################################################################
+
+spMod <- lm(bill_length_mm ~ bill_depth_mm + species, data=penguins)
+check_model(spMod)
+print(
+  tidy(spMod, conf.int=TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+## use augment (from broom) to attach estimates to the original data!
+augSp <- augment(spMod, interval="confidence")
+
+## sometimes need to think carefully about which aesthetic mappings go where; color applies to the points, but not the fit
+
+quartz(title="augSp")
+print(ggplot(penguins)
+      + aes(bill_depth_mm, bill_length_mm, color=species)
+      + geom_point()
+      + geom_line(aes(y=.fitted), data=augSp)
+      + geom_ribbon(aes(ymin=.lower, ymax=.upper, fill=species)
+                    , data=augSp
+                    , alpha=0.4 ## make ribbon translucent
+      )
+)
+
+######################################################################
+
+spIntMod <- lm(bill_length_mm ~ bill_depth_mm*species, data=penguins)
+check_model(spIntMod)
+print(
+  tidy(spIntMod, conf.int=TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+## use augment (from broom) to attach estimates to the original data!
+augSpInt <- augment(spIntMod, interval="confidence")
+
+## sometimes need to think carefully about which aesthetic mappings go where; color applies to the points, but not the fit
+quartz(title="augSpint")
+print(ggplot(penguins)
+      + aes(bill_depth_mm, bill_length_mm, color=species)
+      + geom_point()
+      + geom_line(aes(y=.fitted), data=augSpInt)
+      + geom_ribbon(aes(ymin=.lower, ymax=.upper, fill=species)
+                    , data=augSpInt
+                    , alpha=0.4 ## make ribbon translucent
+      )
+)
+
+######### Counting Parameters ########
+
+# Ex: 3 species of penguin x 4 islands = 12 combinations
+  # intercept 1
+  # penguins 2
+  # islands 3
+  # interactions 2x3 = 6
+
+  # Total: 12 parameters for 12 combinations
+
+# Interpreting parameters
+  
+  # y = a + bx + cz + dxz, where z is 0 for baseline, and 1 for the other group
+    ## baseline gorup: intercept is a, slope is b
+    ## Other group: intercept is a+c, slope is b+d
+  
+  # d = difference between slopes (baseline vs other group)
+  # c = difference between (two interceptrs) groups when x is zero
+    ## may not be interesting or even make sense
+    ## centering x can make it mean something
+
+  # parameters for the other variables are no longer overall effects
+
+######### Main Effects #######
+
+# Model is now estimating many different possible effects for one predictor
+  # Effect is different when other predictors change
+
+# Depending on scientific question, you can:
+  # Ignore these
+  # Average over them
+
+# This confusion is often used as an excuse to throw out non-significant interactions
+  # DO NOT DO THAT
+
+########## Is one group changing more than another #######
+
+# Treatment group changes significantly; control group does not
+  # Can we say that treatment group changes more?
+    ## NO bc significant and not significant are not significantly different
+    ## Failing to reject for the control group doesn't mean it didn't change
+
+# The interaction tests the question directly
+  # Group x time: how different are the changes?
+  # The estimate and CI are for the difference we actually care about
+
+########### Interactions and Scale #########
+
+# If effects combine by multiplying, they look like an interaction on the linear scale
+  # A treatment that increases growth by 10% adda more grams to big animals
+  # On the log scale, there may be no interaction
+
+# Whether there is an interaction can depend on the scale you choose
+  # Decide what scale makes scientific sense before interpreting
+  # This is why transformations and interactions both came up under linearity
+
+######### Which interactions? #######
+
+# A non-significant interaction does not mean that there is no interaction
+  # Throwing it out is accepting the null-hypothesis
+
+# Same as for other parameters
+  # Decide how many you can afford, and choose based on scientific judgement
+
+# Its often good to boil things down to a one-parameter interaction
+  # Beyond that, things can get complicated
+
+###### Ex: Comparing to the control group ########
+
+# We test reflex times in two groups of rabbits
+  # One exposed to radiation, and one not
+  # Usually, the non-radiation group is a sham, where you pretend to expose them to radiation
+
+# Naive method: show that the sham group doesn't change, and the radiation group does
+
+# Better method: show that the sham group changes differently (hypothesis that they will be relatively slower)
+
+# Typically done with interactions
+  # Although sometimes it could be done more simply with differences
 
 
 
 
 
-########################################
-# plot(regression_model)
-# tidy(regression_model, conf.int = TRUE)
 
-# Assumption Checking
 
-# 1. Independence
-# The most important assumption; it cannot generally be checked by a statistical test alone
-# Good study design and appropriate model construction are essential
-# Observations should not share unmodelled influences with other observations
-# They should be conditionally independent given the predictors/model
-# In a lung/FEV example, consider whether observations from the same person or family are related
-# Repeated measurements from one individual are not independent just because they are in separate rows
 
-# Study Design
-# Properly conducted randomized studies can address many independence concerns
-# Not all studies can be randomized
-# When randomization is not possible, account for the structure of the data in the model/design
 
-# Linearity
-  # Ask whether a model that is linear in its chosen parameters is a good fit to the data
-  # If the relationship is not adequately described:
-  # 1. Transform the response
-  # 2. Transform the predictor
-  # 3. Add curved terms, such as polynomial terms or splines
-  # 4. Consider interactions if the relationship depends on another predictor
-  # These choices can change the scientific question being asked
-  # Example questions:
-  # What is the slope on the original linear scale?
-  # What is the slope on the log scale?
-  # What is the average slope over a curved relationship?
 
-# Homogeneity of Variance
-# Residual spread should be approximately constant across predictor values/groups
-# Think about whether the residual variance appears to change with the fitted values or predictor
-# Situations where similar variance may be expected:
-# 1. Measurement noise is larger than the natural spread
-# 2. Treatment creates a small shift in the mean
-# 3. Groups come from the same homogeneous population
-# In some situations, variance grows with the mean
-# Possible approaches:
-# 1. Transform the response (e.g., log or square root, when appropriate)
-# 2. Consider Welch's t-test for a two-group comparison
 
-# Normality
-# Least important of these considerations
-# It is often helped by the Central Limit Theorem (CLT), especially as sample size grows
-# Check the distribution of residuals using diagnostic plots, including a Q-Q plot
-# If needed, consider:
-# 1. Robust linear-model inference
-# 2. Permutation-based linear-model inference
-# NOTE: Normality concerns do not override the need for independence or an appropriate model
 
-# The Central Limit Theorem (CLT)
-# Many distributions of sums/means of independent random variables tend toward a normal distribution
-# Variables arising from additive processes may therefore be approximately normal
-# Tests based on normality assumptions may be less sensitive to departures from normality with more data
-# This is because adding and averaging occur within many statistical procedures
 
-# Testing Regression Assumptions
-# Be careful about using P-values to test assumptions
-# Look for patterns in diagnostic plots and think about what those patterns imply
-# A predictive check can:
-# 1. Simulate data under the fitted model/assumptions
-# 2. Compare simulated data with the actual data
-# Outliers:
-# 1. Ask whether one observation has a large influence on the overall conclusion
-# 2. Consider how the conclusion changes if that observation is handled differently
-# 3. Use sensitivity analysis
-# 4. Where appropriate, try methods that rely less on normality assumptions
 
-# More Complicated Models
 
-# What if the Response Does Not Follow a Straight Line?
-# Options:
-# 1. Transform the response
-# 2. Transform the predictor
-# 3. Fit a curve
-# These choices may change the scientific interpretation/question
-# What is the slope on the original linear scale?
-# What is the slope on the log scale?
-# What is the average slope across a curved relationship?
 
-# Categorical Predictor: ANOVA
-# ANOVA can be represented as a linear model with a categorical predictor
-# For a variable with n categories, the model adds n - 1 parameters relative to a baseline
-# These are often represented by n - 1 dummy/indicator variables
-# Dummy variables use 0s and 1s to encode which category each observation belongs to
-# The intercept is the baseline category's estimated mean
-# Each categorical coefficient is a difference from the baseline
-# ANOVA tests whether there is evidence of differences among group means
-
-# General example:
-# anova_model <- lm(response ~ group, data = data_name)
-# anova(anova_model)
-# summary(anova_model)
-# broom::tidy(anova_model, conf.int = TRUE)
-
-# Variables and Parameters: Fitting a Quadratic
-# To fit a quadratic relationship, the model needs parameters for x and x^2 (plus an intercept)
-# The corresponding model terms are x and I(x^2)
-# Example:
-# quadratic_model <- lm(response ~ x + I(x^2), data = data_name)
-# Other curved relationships can be fitted, often using splines
-
-# Multiple Predictor Variables
-# Multiple regression includes more than one predictor in the same model
-# General form:
-# multiple_model <- lm(response ~ predictor1 + predictor2, data = data_name)
-# Each coefficient describes the association with that predictor while holding the other included predictors constant
-# Interpret each coefficient in the context of the other variables in the model
-
-# Interactions
-# An interaction allows the relationship between one predictor and the response to depend on another predictor
-# In R, use * to include both main effects and their interaction:
-# interaction_model <- lm(response ~ predictor1 * predictor2, data = data_name)
-# The formula predictor1 * predictor2 expands to:
-# predictor1 + predictor2 + predictor1:predictor2
-# The interaction term describes how the effect/slope of one predictor changes across values/groups of the other predictor
-
-# Final Reminders
-# 1. Check study design and independence first
-# 2. Inspect residual/diagnostic plots for model problems
-# 3. Interpret estimates and confidence intervals, not only P-values
-# 4. Keep units and scientific relevance in mind when judging effect size
-# 5. A statistically detectable effect is not automatically a scientifically important effect
 
