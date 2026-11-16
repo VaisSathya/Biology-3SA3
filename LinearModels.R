@@ -14,6 +14,7 @@ children <- read_csv("fevData.Rout.csv")
 digit <- read_excel("BengaliDigits.xlsx")
 mice <- read_csv("mouseActivityData.Rout.csv")
 penguins <- read_csv("penguinData.Rout.csv")
+
 # Linear Models of Observations
   # 1. t-test
   # 2. regression
