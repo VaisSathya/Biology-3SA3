@@ -98,7 +98,83 @@ penguins <- read_csv("penguinData.Rout.csv")
 
 # Covariates
   # In a randomized experiment, covariates don't make your experiment less valid, but they can make it less powerful
-  # what makes an experiment valid?
+  # Validity: what is the probability that the CIs will include the true value?
+  # Power: how clearly can I see?
+    ## Ex: how small are the CIs?
+  # Deal with covariates by blocking or statistical modelling 
+    ## Include the ones we think are important and can exlcude the ones we think are not important
+
+  # Blocking: structure the experiment to reduce effects of covariates
+    ## Randomize boys and girls separately
+    ## Randomize inside each school
+    ## Paired t-tests are an example of blocking (study different fingers from same children)
+
+  # Statistical Modelling
+    ## Adding covariates to model can help make estimate more precise
+      ### lm(res~x+z)
+    ## Remember: 5-10 parameters per model
+
+# Observational Studies
+  # Why are controlled experiments (as opposed to statistical control) the gold standard?
+    ## Statistical control (observational experiments) can never control everything
+  # Why do we do observational studies anyway?
+    ## Practicality
+    ## We can't randomize children to smoke or not smoke
+  # In some fields, conlcusions can onyl be based on
+
+# Ex: HIV control
+  # Observational studies suggested male circumcision reduced HIV transmission
+    ## People who are circumsised have different cultural contexts
+    ## Being circumsised as a child may affect behaviour
+  # Later, people attempted large, randomized experiments
+
+# Ex: exercise
+
+  # More active people have better health outcomes
+  # Is that because:
+    ## Exercise imporves health?
+    ## People with fewer medical conditions exercise more and have better outcomes?
+  # This is an example of confounding
+  # How might you test?
+    ## Insititution education programs for half of the patients in a group
+
+# What to control for?
+  # More control is not always better; the answer depends on causal structure
+  # Confounder: causes both predictor and response 
+    ## Control for it
+  # Mediator: something that lies on path from predictor to response
+    # Depends on question we're asking (for if we want to control for it)
+  # Collider: something that can be caused by both predictor and response
+    ## Don't control for it (this creates an association)
+
+# Natural Experiments
+  # A strong kind of observational study
+  # Ex: Two similar, nearby communities are in different states
+    ## One state has high alcohol taxes, and the corresponding community drinks less alcohol
+    ## Problem: only one replicate per treatment
+    ## Still potentially useful for exploration
+  # What if you have dozens of states with different alcohol taxes?
+    ## This is a replicated experiment
+    ## But you still can't control for everything
+
+# More natural experiments
+  # Streams in areas that have been logged vs. those that haven't
+    ## Or upstream and downstream of a development
+  # Villages where a health intervention has been implemented vs. those where it is still scheduled for implementation
+    ## Better {for statisticians} if this could actually be randomized
+
+# Correlation vs. Causation
+  # Correlation is what we observe directly
+    ## Children who smoke tend to have lower lung capacity
+  # Causation refers to mechanism
+    ## Smoking lowers the lung capacity of children
+  # Statisitical evidence can directly support causation 
+    ## Only in a randomized experiment
+  # Statisitcal evidence can indirectly support causation
+    ## When combined with scientific evidence
+
+# Simulation
+  ## We rarely know the truth about real data
     
 
 
