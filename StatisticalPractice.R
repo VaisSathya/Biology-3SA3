@@ -175,6 +175,13 @@ penguins <- read_csv("penguinData.Rout.csv")
 
 # Simulation
   ## We rarely know the truth about real data
+  ## If we make up data, we know the truth, and we can see how our method does
+  ## A few lines of R can replace a lot of formulas
+  # It also forces us to say waht we think...
+
+# Simulating a study
+  # Choose a truth: effect size, noise, sample size, study structure
+  # Generate
     
 
 
