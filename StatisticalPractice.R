@@ -168,20 +168,57 @@ penguins <- read_csv("penguinData.Rout.csv")
     ## Children who smoke tend to have lower lung capacity
   # Causation refers to mechanism
     ## Smoking lowers the lung capacity of children
-  # Statisitical evidence can directly support causation 
+  # Statistical evidence can directly support causation 
     ## Only in a randomized experiment
-  # Statisitcal evidence can indirectly support causation
+  # Statistical evidence can indirectly support causation
     ## When combined with scientific evidence
 
 # Simulation
   ## We rarely know the truth about real data
   ## If we make up data, we know the truth, and we can see how our method does
   ## A few lines of R can replace a lot of formulas
-  # It also forces us to say waht we think...
+  # It also forces us to say waht we think our study looks like
 
 # Simulating a study
   # Choose a truth: effect size, noise, sample size, study structure
-  # Generate
+  # Generate a fake data set
+  # Analyze it exactly the way you plan to analyze the real data
+  # Save the estimate, CI, and P-value
+  # Repeat many times and count
+
+# Testing validity
+  # Set effect to 0, does the method reject <=alpha of the time?
+    ## frequentist definiton of validity
+
+
+
+
+# powerTest.R
+
+  # imagine we're estimating mean height of a population
+set.seed(1123)
+x<-rnorm(20, mean=67, sd=5) # height in inches of Mac students
+m<-lm(x~1)
+confint(m)
+coef(m)
+
+  # what if want to run 1000 times?
+
+study<-function(n, mh, sdh){
+  x<-rnorm(20, mean=mh, sd=sdh) # height in inches of Mac students
+  m<-lm(x~1)
+  ci<-confint(m)
+  est<-coef(m)
+  return(data.frame(low=ci[[1]],est=est[[1]],high=ci[[2]]))
+}
+
+experiment<-function(n,mh,sdh,reps){
+  return(replicate(reps,study(n,mh,sdh),simplify=FALSE)
+         |> bind_rows()
+         )
+}
+
+experiment(n=20,mh=67,sdh=5,reps=1000)
     
 
 

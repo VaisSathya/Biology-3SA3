@@ -1,0 +1,811 @@
+---
+title: "Linear Models: Course Notes"
+author: ""
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage{amssymb}
+geometry: margin=1in
+fontsize: 11pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  fig.width = 6,
+  fig.height = 4
+)
+
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2); theme_set(theme_bw(base_size = 15))
+library(broom)
+library(performance)
+library(readxl)
+library(janitor)
+library(splines)
+
+# Data files must sit in the same folder as this .Rmd
+children <- read_csv("fevData.Rout.csv")
+digit    <- read_excel("BengaliDigits.xlsx")
+mice     <- read_csv("mouseActivityData.Rout.csv")
+penguins <- read_csv("penguinData.Rout.csv")
+```
+
+# Overview of Linear Models
+
+Linear models of observations include:
+
+1. $t$-test
+2. Regression
+3. ANOVA
+4. ANCOVA
+
+## What is a linear model?
+
+- A fit to a **response variable** based on assumptions about its relationship to one or more **predictor variables**.
+- Inferences about parameters are based on assumptions about the *conditional distribution* of the response variable.
+    - Assume the response has a "true" distribution for any value of the predictors.
+- A linear model gives the response as a **linear combination of the parameters** being estimated:
+
+$$y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \cdots + \beta_p x_{ip} + \varepsilon_i, \qquad \varepsilon_i \sim N(0, \sigma^2)$$
+
+> **Note:** any response to a categorical variable can be encoded as a linear model.
+
+## Power
+
+- Linear models are very efficient: the best "least-squares" fit comes from simple linear algebra,
+
+$$\hat{\boldsymbol\beta} = \arg\min_{\boldsymbol\beta} \sum_i (y_i - \hat y_i)^2 = (X^\top X)^{-1} X^\top \mathbf{y}$$
+
+- They can be powerful at detecting effects, but can also be **over-sensitive to outliers**.
+
+## Assumptions
+
+1. Linear-model fits are basically always "correct" (we can always find the best parameters), but can be hard to interpret.
+    - We need assumptions to know what "best" means.
+2. **Inferences** (parameter estimates, $P$-values, CIs) depend on assumptions about the residuals.
+3. A **residual** is the difference between an observed value and a model prediction:
+$$e_i = y_i - \hat y_i$$
+4. LM inference assumes residuals are **independent** and **normally distributed** with **constant variance**.
+    - The mean of the residuals is always 0 (otherwise the machine would find a better linear model).
+
+## Variables
+
+**Response**
+
+- Assumed to be normally distributed (conditional on the predictors).
+- Must be continuous.
+
+**Predictors**
+
+- The LM framework is very flexible.
+- Can be of any type: continuous, integer, ordinal, nominal, etc.
+
+## Fitting in R
+
+```r
+lm(formula, data)
+```
+
+- The formula has the form `y ~ x1 + x2 + ...` (response `~` predictors).
+- `lm(y ~ 1 + x + c)`: `y` is the response, `x` and `c` are predictors, and `1` is the intercept (a constant term).
+- `lm(y ~ x + c)` also has an intercept (intercepts are usually good).
+- To suppress the intercept (force the fit through the origin): `lm(y ~ 0 + x + c)` or `lm(y ~ x + c - 1)`.
+
+# No Predictor: One-Sample $t$-test
+
+Example question: what is the mean weight of an African elephant?
+
+**Assumption:** the population is normally distributed.
+
+The intercept-only model is
+
+$$y_i = \mu + \varepsilon_i$$
+
+```{r lmean}
+summary(children)
+
+lmean <- lm(height ~ 1, data = children)
+
+plot(lmean)
+
+summary(lmean)
+
+print(tidy(lmean, conf.int = TRUE))
+```
+
+## Check the assumption
+
+Is the sample normally distributed? **No.** Should you consider another test, or another question?
+
+- Permutation test of the mean
+- Test the median instead
+- Test the mean on a transformed scale
+
+## Interpreting diagnostics
+
+1. Linear-model assumptions are never met exactly.
+    - You can't use *failure to reject* the null as evidence that your assumptions are OK.
+2. There is no universally accepted way to decide whether you are "close enough".
+    - As sample size gets larger, your ability to reject the null gets stronger.
+    - Concerns often get smaller (particularly normality concerns, via the CLT).
+
+## Interpreting results
+
+1. Generally avoid R's `summary` table: it shows $P$-values but not CIs.
+2. Focus on **estimates and confidence intervals**. Interpret by:
+    - Paying attention to units
+    - Using an outside reference
+    - Remembering that statistics is not magic
+
+# Binary Predictor: Two-Group Test
+
+A predictor with two values (continuous or categorical):
+
+- Can men hold their breath longer than women?
+- Are mice more active at 10 °C or 20 °C?
+
+We are generally interested in:
+
+- The **sign** of the difference
+- The **magnitude** (size) of the difference
+
+> **Note:** statistics is necessary to quantify uncertainty and determine how big the difference might be in the broader population.
+
+## Testing assumptions
+
+1. Residuals should look approximately normal and have approximately the same spread across the two groups.
+    - Check Q-Q plots to see how closely points follow the normal line (standard diagnostics also help identify variance shifts between groups).
+2. Otherwise, consider:
+    - A permutation test
+    - A different scale
+    - Medians
+
+## Model parameters in R
+
+R attaches a parameter to each predictor. The **intercept** (constant) is the estimated value at:
+
+- **Zero** for continuous predictors
+- The **baseline** for categorical predictors
+
+Other parameters are:
+
+- **Slopes** for continuous predictors
+- **Differences** for categorical predictors
+
+R automatically names categorical coefficients: intercept = baseline group; coefficient = difference added to reach the other group.
+
+## Continuous vs. categorical coding (mouse activity)
+
+| View | Meaning of temperature | Intercept | Coefficient |
+|:-----|:-----------------------|:----------|:------------|
+| **Categorical** | A label (cold / warm); R codes it 0/1 | Mean of baseline group (cold) | Amount to add to reach the other group (warm $-$ cold) |
+| **Continuous** | A number (10 or 20) | Predicted CO$_2$ at 0 degrees | Change in CO$_2$ per degree |
+
+**Categorical model:** with indicator $I = 0$ (cold) or $1$ (warm),
+
+$$\text{activity} = a + b \cdot I$$
+
+**Continuous model:**
+
+$$\text{activity} = a + b \cdot \text{temp}, \qquad \text{temp} \in \{10, 20\}$$
+
+**Conversion:**
+
+$$\text{slope} \times \text{gap} = \text{group difference}, \qquad \text{slope} = \frac{\text{group difference}}{\text{gap}}$$
+
+```{r mice-categorical}
+summary(mice)
+
+# Indicator: treat = 0 for cold, 1 for warm
+twoGroup <- lm(activity ~ treat, data = mice)
+
+plot(twoGroup)
+
+print(
+  tidy(twoGroup, conf.int = TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+hist(residuals(twoGroup))
+```
+
+```{r mice-continuous}
+# temp = 10 or 20
+twoCont <- lm(activity ~ temp, data = mice)
+
+plot(twoCont)
+
+print(
+  tidy(twoCont, conf.int = TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+```
+
+## Effect sizes
+
+- Units of the parameters in the mouse example: mL CO$_2$/h for the activity (temperature difference), and (mL CO$_2$/h)/°C for the slope.
+- Children example: inches for height; L for volume.
+
+**How do we know whether a value is large?**
+
+- Compare to *population* statistics, not inferential statistics.
+- We want to know whether the value is large compared to something real, not compared to our own uncertainty.
+    - E.g. total value, variation in the population, difference between sexes, difference between species, ...
+- Compare to a value with the same units.
+- Specific scientific knowledge is often needed.
+
+## Measures of the size of a parameter
+
+1. **Certainty** (of the parameter's sign): $p$-values, $t$-values.
+2. **Effect**: a value with units, or a ratio of the value to something with the same units (or a log-ratio).
+3. Ratios are also good.
+
+## Measures of spread
+
+**Standard deviation (SD)**
+
+- Measures variation of the *population*.
+- Compare it to the effect estimate to ask: how important is what we see?
+- Same units as the variable; the variance is its square.
+- Estimate divided by within-group SD helps understand biological importance.
+    - E.g. "the effect of the temperature treatment is 1.2 times the natural variability".
+    - Often called $d$ or $g$ (scientific judgement is usually better).
+
+**Standard error (SE)** (or confidence interval)
+
+- Measures *uncertainty of a parameter*: how much variation we would expect if we estimated the parameter again.
+- Same units as the parameter (and as the response, if the predictor is categorical).
+- Estimate / SE is a measure of certainty, directly related to the $p$-value:
+$$t = \frac{\hat\beta}{\mathrm{SE}(\hat\beta)}$$
+  (reported as the $t$-statistic in R's `summary`; not used in this class).
+
+> Increasing the sample size typically changes the SD only a little, but the SE **decreases**.
+
+Scientifically, are you more interested in how *big* an effect is, or how *certain* you are about its sign? Usually how big. Why, then, so much emphasis on $p$-values? Some people are afraid of statistics, and some want statistics to be magic.
+
+## Common questions
+
+- **$t$-test vs. ANOVA vs. regression?** Make sure your predictors are coded correctly, then don't worry about it.
+- **Different-sized groups?** Don't worry about it.
+
+## Parameterizing
+
+Different two-group models give the same fit, the same predicted mean for each observation (and the same estimated SD), but different *parameterizations*:
+
+- **Baseline and difference** (default for categorical variables)
+- **Intercept and slope** (default for continuous variables)
+- **Mean and difference**
+
+`lm` cannot support too many parameters, depending on how much data you have and its type. A two-group model needs only 2 parameters; adding a categorical predictor with 2 levels adds only 1 parameter to the model.
+
+# Paired $t$-test
+
+Example: do people have more joint erosion on their dominant hand?
+
+**What's missing?** A person ID: we need to know which dominant hand goes with which non-dominant hand. We can't use a two-group test because the two groups are **not independent**: both hands belong to the same body.
+
+**How to do it:** the paired $t$-test is equivalent to a one-sample test on the differences,
+
+$$d_i = y_{i,\text{dominant}} - y_{i,\text{non-dominant}}$$
+
+so we turn it back into the no-predictor case. The intercept is the average difference; we are interested in its sign.
+
+## Example: Bengali digits
+
+```{r digits}
+analyze <- (digit
+            |> clean_names()
+            |> mutate(
+              leftDiff  = l2d_mm - l4d_mm
+              , rightDiff = r2d_mm - r4d_mm
+            )
+)
+
+summary(analyze)
+```
+
+```{r digits-right}
+rdMod <- lm(rightDiff ~ 1, data = analyze)
+
+plot(rdMod)
+
+print(
+  tidy(rdMod, conf.int = TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+```
+
+> **Note:** you cannot use a $P$-value to confirm that things are normal or homoscedastic. Here we compare the differences to zero.
+
+```{r digits-left}
+ldMod <- lm(leftDiff ~ 1, data = analyze)
+
+# This *is* a paired t-test
+t.test(analyze$l2d_mm, analyze$l4d_mm, paired = TRUE)
+
+plot(ldMod)
+
+print(
+  tidy(ldMod, conf.int = TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+```
+
+**How big are these differences?** We could:
+
+- Divide them by mean finger length
+- Divide by a standard deviation of finger lengths
+- Think about ratios (differences on the log scale!):
+
+$$\log(L_{2D}) - \log(L_{4D}) = \log\!\left(\frac{L_{2D}}{L_{4D}}\right)$$
+
+```{r digits-ratio}
+analyze <- (analyze
+            |> mutate(leftLogRat = log(l2d_mm) - log(l4d_mm))
+)
+
+ratMod <- lm(leftLogRat ~ 1, data = analyze)
+
+plot(ratMod)
+
+print(
+  tidy(ratMod, conf.int = TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+```
+
+Compare the numbers to the means to judge their importance.
+
+# Continuous Predictor: Regression
+
+1. Regression analysis.
+2. Typically focus on the **slope**.
+3. Pay attention to the baseline as well as the intercept.
+
+Model: $y_i = \beta_0 + \beta_1 x_i + \varepsilon_i$. Example: `fev.R`.
+
+```{r fev-regression}
+summary(children)
+
+lheight <- lm(lungCapacity ~ 1 + height, data = children)
+
+summary(lheight)
+plot(lheight)
+print(tidy(lheight, conf.int = TRUE))
+```
+
+`geom_smooth()` shows curves; `alpha` is transparency, so we can see the fit behind the points. When adding a `formula`, it must be based on the aesthetics (`x`, `y`).
+
+```{r fev-smooth}
+print(ggplot(children)
+      + aes(height, lungCapacity)
+      + geom_point(alpha = 0.4)
+      + geom_smooth()
+)
+
+print(ggplot(children)
+      + aes(height, lungCapacity)
+      + geom_point(alpha = 0.4)
+      + geom_smooth(method = "lm", formula = y ~ x)
+)
+```
+
+```{r fev-check, fig.height=9}
+check_model(lheight)
+```
+
+The data should somewhat resemble the simulated data in the posterior predictive check.
+
+# Assumption Checking
+
+## Independence
+
+- The **most important** assumption, and it can't be checked statistically.
+- Requires good study design and model construction.
+- Observations should not share anything with other observations that isn't included in the model.
+
+Example, what should we worry about in the lung data?
+
+- Is the same child measured twice?
+- Are some groups of children related?
+- Are older children taken from different schools?
+
+Does it depend on our scientific question?
+
+**Study design:** randomized studies, if done correctly, can address most independence concerns. Not all studies can be randomized.
+
+## Linearity
+
+Is a model that's linear in these particular parameters a good fit to the data? If not:
+
+- Consider whether you should transform the response variable
+- Add curvy terms (polynomial or spline)
+- Consider whether you need interactions
+
+## Homogeneity of variance
+
+Also called homo- and heteroscedasticity: the variance does not change with the predictor, i.e.
+
+$$\mathrm{Var}(\varepsilon_i) = \sigma^2 \quad \text{for all } i$$
+
+- The residual spread should be the same at every value of the predictor (the same in both groups).
+- Expect to *see* a violation if you have a large range of positive predictions; if variation is proportional to size, log transformations help.
+
+When would you expect to see homogeneity?
+
+- Measurement noise exceeds the spread
+- The treatment is a small shift in the mean
+- Groups come from the same homogeneous population
+
+...and when would you expect to see a violation? In situations where variance grows with the mean.
+
+Consider a data transformation (log or square root), or Welch's $t$-test.
+
+## Normality
+
+- The **least important** consideration, and the one most helped by the CLT.
+- Can often be addressed by modifying the linear model: robust LM inference, or permutation-based LM inference.
+
+**The CLT.** Most distributions converge to a normal distribution if you add up independent random variables and take the mean.
+
+- Variables that result from *additive* processes tend to be normal.
+- Variables that result from *multiplicative* processes tend to be log-normal.
+- $t$-tests are based on normality assumptions.
+
+## Testing the regression assumptions
+
+- Assumptions are never exactly true.
+- We will rarely reject when the sample size is small, and often reject when it is large.
+- Look for **patterns** in diagnostic plots and think about options.
+
+## Predictive check
+
+- Use `check_model` from the `performance` package.
+- Gives a general feeling about all the assumptions.
+- Simulates what the data should look like if the assumptions were true, and compares to the actual data.
+
+**Outliers**
+
+- Asks: is there a single point with a lot of influence?
+- A point far from the mean of the predictor has more *leverage*.
+- A point outside the curves in the influence plot has a big effect on the analysis.
+- **Sensitivity analysis:** try the analysis without some combination of outliers just to see.
+- Try to rely less on the normality assumption (robust or permutation-based inference).
+
+# More Complicated Models
+
+## What if the response isn't a straight line?
+
+- Transform the response
+- Transform the predictor
+- Fit a curve
+- Or change your scientific question to some extent:
+    - What is the slope on a linear or log scale?
+    - What is the average slope across a curved response?
+
+## Categorical predictor (ANOVA)
+
+- Classically called ANOVA.
+- For a variable with $n$ categories we add $n-1$ new parameters, and $n-1$ "lm variables" (in addition to the intercept).
+- These are called **dummy variables** because we code which category each observation is in using 0s and 1s.
+
+Example: `chickwts`.
+
+```{r chickwts}
+summary(chickwts)
+
+feedMod <- lm(weight ~ feed, data = chickwts)
+print(tidy(feedMod, conf.int = TRUE))
+```
+
+**What paradigm do we use?** Even assuming we are frequentist, we need to fit $n-1$ parameters; how do we deal with $\alpha$ (the counterfactual probability of seeing something when there's nothing there)? At what level should we control $\alpha$: experiment, variable, or parameter?
+
+**Hypothesis-based analysis**
+
+- The best approach is to focus on a small set of specific questions.
+- Associate them with a small number of parameters you can measure.
+- Use *contrasts* or *interactions* to construct the test you are most interested in.
+
+**Exploratory analysis**
+
+- Look at a large number of effects: which seem interesting? Should you believe them?
+    - **No.** Do a new experiment, or form hypotheses and construct a hypothesis-based question.
+    - False discovery rates and $p$-value corrections should be used sparingly.
+    - You can also look at confidence intervals, but be aware that some proportion do not contain the answer.
+
+## Variables and parameters
+
+- To fit a quadratic we need two parameters for the predictor, so two "lm variables": $x$ and $x^2$:
+$$y = \beta_0 + \beta_1 x + \beta_2 x^2 + \varepsilon$$
+- We might want to fit other sorts of curves (typically a spline).
+- Like `feed` (in chicks), this is a "multi-parameter" variable.
+
+## Fitting a quadratic
+
+Example: `fev`. Do we have a specific scientific question?
+
+- *Does it curve up or down?* Test the quadratic term.
+- *Can we be confident about the average trend in the presence of curvature?*
+
+Use the R function `poly`, but beware of overfitting.
+
+```{r quadratic}
+lheightQuad <- lm(lungCapacity ~ 1 + poly(height, 2), data = children)
+print(tidy(lheightQuad, conf.int = TRUE))
+```
+
+# Multiple Predictor Variables
+
+LMs easily handle multiple predictors. Example: `fev.multi.rout`.
+
+```{r multi-smoke, fig.height=9}
+summary(children)
+
+# Why 1+ ? It makes the intercept explicit (it is included by default anyway)
+lSmoke <- lm(lungCapacity ~ 1 + currentSmoker, data = children)
+
+check_model(lSmoke)
+```
+
+```{r smoke-boxplot}
+print(ggplot(children)
+      + aes(currentSmoker, lungCapacity)
+      + geom_boxplot()
+)
+```
+
+```{r smoke-age}
+# Adding age as a second predictor (additive: no interaction)
+lSmokeAge <- lm(lungCapacity ~ 1 + currentSmoker + age, data = children)
+
+print(tidy(lSmoke, conf.int = TRUE))
+print(tidy(lSmokeAge, conf.int = TRUE))
+```
+
+## Scientific question: what is the effect of age on lung capacity?
+
+- Height can **mediate** the relationship between age and lung capacity.
+    - People might be taller because they're older.
+    - We might want to *exclude* height to see the **total** effect of age, or *include* it to see the **direct** effect.
+- Age cannot be caused by height, so we should (usually) include age to see the effect of height.
+
+```{r age-models, fig.height=9}
+ageMod <- lm(lungCapacity ~ 1 + age, data = children)
+check_model(ageMod)
+
+ageHeightMod <- lm(lungCapacity ~ 1 + age + height, data = children)
+check_model(ageHeightMod)
+```
+
+## Controlling
+
+Adding a second variable when our primary interest is the first.
+
+- We *control for* age when we study the effect of smoking on lung capacity (maybe also sex).
+- When you control for a variable, you don't necessarily need to interpret that variable's parameters at all.
+
+## Conflation
+
+*Why do children who smoke have higher lung capacity?* Because they're older. Age is conflated with smoking.
+
+## Accounting for variation
+
+Even without conflation, controlling for relevant predictors can make predictions more accurate. Example: a randomized controlled trial of a blood-pressure drug.
+
+## How many parameters?
+
+- A linear model will find patterns even in noise.
+- Controlling for too many factors makes predictions *less* precise (adds variation and uncertainty).
+- **Rule of thumb:** 5–10 solid, continuous data points per parameter.
+- When data are small counts or yes/no, reduce the number of parameters further.
+
+## Which parameters?
+
+It's very common to choose predictors based on preliminary analyses, or to throw out interaction or curvature terms based on significance. But this:
+
+- Accepts the null hypothesis (concluding these things don't matter).
+- Introduces confirmation bias. If we choose our final test based on the data, we will be bad frequentists: wrong more than 5% of the time.
+
+Instead: decide how many parameters you can afford based on the data, and decide *which* parameters to use based on **scientific judgement**. This can be informed by other data, but not by data from your study.
+
+# Interactions
+
+So far each predictor has its own effect, and the effects **add up**. The effect of age on lung capacity is assumed to be the same for boys and girls.
+
+## What is an interaction?
+
+An interaction means the effect of one predictor **depends on** the value of another.
+
+- Example: does lung capacity increase faster with age for boys than for girls?
+- Interactions are **symmetric**: if the effect of age depends on sex, then the effect of sex depends on age. Choose whichever phrasing matches the question.
+
+## Interactions in R
+
+- `lm(y ~ x + z)`: the **additive** model (no interaction).
+- `lm(y ~ x * z)`: the **interactive** model, short for `lm(y ~ x + z + x:z)`.
+    - The new lm variable is made by *multiplying* $x$ and $z$.
+    - It is still a linear model because it is linear in its parameters.
+
+$$y = \beta_0 + \beta_1 x + \beta_2 z + \beta_3 xz + \varepsilon$$
+
+**How many parameters does an interaction add?** Multiply the parameter counts of the two variables.
+
+- Continuous $\times$ two categories: 1
+- Three categories $\times$ four categories: $2 \times 3 = 6$
+
+For categorical variables with $n$ and $k$ levels:
+
+$$\text{Total parameters} = 1 + (n-1) + (k-1) + (n-1)(k-1)$$
+
+## Example: penguins
+
+```{r penguins-all}
+summary(penguins)
+
+allmod <- lm(bill_length_mm ~ bill_depth_mm, data = penguins)
+```
+
+```{r penguins-all-check, fig.height=9}
+check_model(allmod)
+```
+
+```{r penguins-all-fit}
+print(
+  tidy(allmod, conf.int = TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+# augment (from broom) attaches estimates to the original data
+augAll <- augment(allmod, interval = "confidence")
+
+print(ggplot(penguins)
+      + aes(bill_depth_mm, bill_length_mm)
+      + geom_point(aes(color = species))
+      + geom_line(aes(y = .fitted), data = augAll)
+      + geom_ribbon(aes(ymin = .lower, ymax = .upper)
+                    , data = augAll
+                    , alpha = 0.4 # make ribbon translucent
+      )
+)
+```
+
+### Additive model (species)
+
+```{r penguins-species, fig.height=9}
+spMod <- lm(bill_length_mm ~ bill_depth_mm + species, data = penguins)
+check_model(spMod)
+```
+
+```{r penguins-species-fit}
+print(
+  tidy(spMod, conf.int = TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+augSp <- augment(spMod, interval = "confidence")
+
+# Think carefully about which aesthetic mappings go where:
+# color applies to the points, but not the fit
+print(ggplot(penguins)
+      + aes(bill_depth_mm, bill_length_mm, color = species)
+      + geom_point()
+      + geom_line(aes(y = .fitted), data = augSp)
+      + geom_ribbon(aes(ymin = .lower, ymax = .upper, fill = species)
+                    , data = augSp
+                    , alpha = 0.4
+      )
+)
+```
+
+### Interactive model (species $\times$ depth)
+
+```{r penguins-interaction, fig.height=9}
+spIntMod <- lm(bill_length_mm ~ bill_depth_mm * species, data = penguins)
+check_model(spIntMod)
+```
+
+```{r penguins-interaction-fit}
+print(
+  tidy(spIntMod, conf.int = TRUE)
+  |> select(term, estimate, conf.low, conf.high)
+)
+
+augSpInt <- augment(spIntMod, interval = "confidence")
+
+print(ggplot(penguins)
+      + aes(bill_depth_mm, bill_length_mm, color = species)
+      + geom_point()
+      + geom_line(aes(y = .fitted), data = augSpInt)
+      + geom_ribbon(aes(ymin = .lower, ymax = .upper, fill = species)
+                    , data = augSpInt
+                    , alpha = 0.4
+      )
+)
+```
+
+## Counting parameters
+
+Example: 3 species of penguin $\times$ 4 islands = 12 combinations.
+
+| Term | Parameters |
+|:-----|:----------:|
+| Intercept | 1 |
+| Species | 2 |
+| Islands | 3 |
+| Interactions ($2 \times 3$) | 6 |
+| **Total** | **12** (for 12 combinations) |
+
+## Interpreting parameters
+
+$$y = a + bx + cz + dxz$$
+
+where $z$ is 0 for the baseline group and 1 for the other group.
+
+- **Baseline group:** intercept is $a$, slope is $b$.
+- **Other group:** intercept is $a + c$, slope is $b + d$.
+
+Then:
+
+- $d$ = difference between slopes (baseline vs. other group).
+- $c$ = difference between the two intercepts (groups) when $x = 0$.
+    - May not be interesting or even make sense; **centering** $x$ can make it meaningful.
+- Parameters for the other variables are **no longer overall effects**.
+
+## Main effects
+
+The model now estimates many different possible effects for one predictor: the effect is different when other predictors change. Depending on the scientific question, you can:
+
+- Ignore these, or
+- Average over them.
+
+This confusion is often used as an excuse to throw out non-significant interactions. **Do not do that.**
+
+## Is one group changing more than another?
+
+Suppose the treatment group changes significantly and the control group does not. Can we say the treatment group changes *more*?
+
+- **No**, because "significant" and "not significant" are not themselves significantly different.
+- Failing to reject for the control group doesn't mean it didn't change.
+
+The interaction tests the question directly: **group $\times$ time** asks how different the changes are, and the estimate and CI are for the difference we actually care about.
+
+## Interactions and scale
+
+If effects combine by multiplying, they look like an interaction on the linear scale.
+
+- A treatment that increases growth by 10% adds more grams to big animals.
+- On the log scale there may be **no** interaction:
+
+$$\log(y) = \log(a) + \log(1.10) \cdot \text{treatment}$$
+
+Whether there is an interaction can depend on the scale you choose. Decide what scale makes scientific sense *before* interpreting. This is why transformations and interactions both came up under linearity.
+
+## Which interactions?
+
+- A non-significant interaction does **not** mean there is no interaction; throwing it out is accepting the null hypothesis.
+- Same as for other parameters: decide how many you can afford, and choose based on scientific judgement.
+- It's often good to boil things down to a **one-parameter interaction**; beyond that, things get complicated.
+
+## Example: comparing to the control group
+
+We test reflex times in two groups of rabbits: one exposed to radiation, and one not. Usually the non-radiation group is a **sham**, where you pretend to expose them to radiation.
+
+- **Naive method:** show that the sham group doesn't change and the radiation group does.
+- **Better method:** show that the sham group changes *differently* (hypothesis: they will be relatively slower).
+
+This is typically done with interactions, although sometimes it can be done more simply with differences.

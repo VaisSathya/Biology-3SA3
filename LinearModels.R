@@ -201,10 +201,7 @@ print(
 
 ######################################
 
-
-
-
-# Measures of Size (in 2 ways)
+# Measures of Size of a Parameter (in 2 ways)
   # 1. Certainty (of parameters sign)
   #   a. p-values, t-value
    
@@ -231,6 +228,12 @@ print(
     # Why is there so much emphasis on p-values?
       ## Some people are afraid of statistics
       ## Some people want statistics to be magic
+
+# lm Questions
+  # t-test vs. ANOVA vs. Regression
+    ## Make sure your predictor variables are coded correctly, and then don't worry about it
+  # Different sized groups
+    ## Don't worry about it
 
 # Standard Deviation
   # Measures variability of a variable
@@ -344,19 +347,6 @@ print(
 # Compare numbers to the means (for significance)
 
 
-
-# interaction model next week and regression and multi category
-
-
-
-# lm Questions
-  # t-test vs. anova vs. regression
-    ## make sure predictor variables are coded correctly, and then don't worry
-  # Different-size groups
-    # Don't worry about it
-  # lm is kind-of magic
-
-
 # Continuous Predictor
   # 1. Regression analysis
   # 2. Typically focus on the slope
@@ -453,14 +443,16 @@ check_model(lheight)
 
 # Predictive Check
   ## Use check_model from the performance package
+  ## General feeling about all the assumptions
   ## Simulates what it should look like if assumptions were true
+  ## Compares to actual data
 
   ## Outliers
     ## Asks: is there a single point with a lot of influence?
     ## A point far from mean of predictor has more leverage
     ## A point outside curves you say is a point that has a big effect on analysis
     ## Sensitivity analysis
-      ### try the analysis without csome combination of outliers just to see
+      ### try the analysis without some combination of outliers just to see
     ### Try to rely less on normal assumption (robust or permutation-based inference)
 
 ################ More Complicated Models ###############################
@@ -477,7 +469,7 @@ check_model(lheight)
   ## clasically called ANOVA
   ## We add n-1 new parameters for a variable with n categories
     ### We also add n-1 'lm variables' to the calculation (in addition to the intercept)
-    ### called dummy variables vc we code which category each observation is in using 0s and 1s
+    ### called dummy variables bc we code which category each observation is in using 0s and 1s
   ## Ex: chickwts
 
 summary(chickwts)
@@ -579,6 +571,7 @@ check_model(ageMod)
   # Ex: randomized control trial of a blood-pressure drug
 
 # How many parameters?
+  # Linear model will find patterns even in noise
   # Controlling for too many factors will make our predictions less precise
     ## Add variation, uncertainty
   # ROT: 5-10 solid, continuous data points per parameter
